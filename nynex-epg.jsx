@@ -518,19 +518,6 @@ function LiveWindow({ channel, programme }) {
             </>
           )}
         </div>
-        <div style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          padding: "10px 16px",
-          background: "rgba(0,0,0,0.42)",
-          fontFamily: F_UI,
-          fontWeight: 700,
-          fontSize: "30px",
-          color: "#ffffff",
-          ...ONE_LINE,
-        }}>Ch. {channel.num} {channel.name} {programme}</div>
       </div>
     </div>
   );

@@ -70,6 +70,9 @@ If proportions drift again, adjust these first instead of patching individual bl
 - Current `allowedGroups` are the UK groups.
 - `channelLimit: 0` means no guide cap.
 - `previewChannels` controls the rotating preview subset.
+- `previewInfoMode` controls whether the top-left panel rotates or stays fixed.
+- `previewVideoMode` controls whether the large preview follows a channel stream or a fixed URL.
+- `previewFixedChannel` can pin the top-left panel when not rotating.
 - `previewTransitions`, `previewTransitionMode`, and `previewTransitionSeconds` control the top-left panel effect.
 - `previewVideoUrl` is an override; blank means use the current preview channel stream.
 - `previewCycleSeconds` is currently `15`.

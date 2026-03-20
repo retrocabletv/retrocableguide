@@ -51,6 +51,9 @@ Important options:
 - `timeFormat`: `"12h"` or `"24h"`
 - `previewChannels`: ordered list of channel numbers used for preview rotation
 - `previewCycleSeconds`: preview rotation interval
+- `previewInfoMode`: `"rotate"` or `"fixed"` for the top-left panel
+- `previewVideoMode`: `"channel"` or `"url"` for the large preview window
+- `previewFixedChannel`: optional fixed channel number when info mode is not rotating
 - `previewTransitions`: top-left info-panel transition list
 - `previewTransitionMode`: `"random"` or `"cycle"`
 - `previewTransitionSeconds`: top-left transition duration
@@ -76,7 +79,8 @@ Important options:
 - Raw TS preview streams are played in-browser with `mpegts.js`.
 - HLS manifests are played with `hls.js`.
 - Wider-than-`4:3` sources are cropped to fill the retro preview window.
-- If `previewVideoUrl` is set, it overrides the rotating preview channel streams.
+- The top-left panel and the large preview window are controlled independently.
+- `previewVideoMode: "url"` lets the guide use a fixed local/remote preview source while the top-left panel can still rotate over live channel data.
 - The top-left guide info panel supports configurable wipes, blinds, and block-dissolve transitions.
 
 ## Mosaic Notes

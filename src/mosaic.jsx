@@ -10,6 +10,7 @@ const TILE_HEIGHT = 144;
 const PROMO_WIDTH = 360;
 const PROMO_HEIGHT = 288;
 const LABEL_FONT = "\"VT323\", \"Helvetica Neue\", Helvetica, Arial, sans-serif";
+const TEXT_OUTLINE = "1px 0 0 #000000, -1px 0 0 #000000, 0 1px 0 #000000, 0 -1px 0 #000000";
 
 const TILE_POSITIONS = [
   { left: 0, top: 0 },
@@ -150,6 +151,7 @@ export default function MosaicPage() {
         position: "relative",
         overflow: "hidden",
         background: "#000000",
+        textShadow: TEXT_OUTLINE,
       }}
     >
       {TILE_POSITIONS.map((position, index) => (

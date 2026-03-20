@@ -1,5 +1,8 @@
 export const APP_CONFIG = {
   guideLogoUrl: "/guide-logo.png",
+  previewInfoMode: "rotate",
+  previewVideoMode: "channel",
+  previewFixedChannel: null,
   previewVideoUrl: "",
   previewChannels: [401, 402, 403, 404, 405, 406, 407, 408, 409, 410],
   previewCycleSeconds: 15,

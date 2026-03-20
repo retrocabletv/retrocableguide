@@ -20,6 +20,7 @@ const LEFT_CHANNEL_WIDTH = LEFT_PANEL_WIDTH - START_COL_WIDTH;
 const NOW_HEADER_WIDTH = 148;
 const TELE_TEXT_WIDTH = FRAME_WIDTH - LEFT_PANEL_WIDTH - NOW_HEADER_WIDTH;
 const BODY_TEXT_WIDTH = FRAME_WIDTH - START_COL_WIDTH - 14;
+const TEXT_OUTLINE = "1px 0 0 #000000, -1px 0 0 #000000, 0 1px 0 #000000, 0 -1px 0 #000000";
 
 const PROMOS = [
   {
@@ -984,10 +985,13 @@ export default function RetroCableGuide() {
     ? channels.filter((channel) => APP_CONFIG.previewChannels.includes(channel.num) && channel.streamUrl)
     : channels.filter((channel) => channel.streamUrl);
   const previewChannelKey = previewChannels.map((channel) => channel.num).join(",");
+  const fixedPreviewChannel = APP_CONFIG.previewFixedChannel != null
+    ? previewChannels.find((channel) => channel.num === APP_CONFIG.previewFixedChannel) || previewChannels[0] || null
+    : previewChannels[0] || null;
 
   // Now On rotation
   useEffect(() => {
-    if (previewChannels.length <= 1) {
+    if (APP_CONFIG.previewInfoMode !== "rotate" || previewChannels.length <= 1) {
       return undefined;
     }
 
@@ -1037,9 +1041,18 @@ export default function RetroCableGuide() {
     };
   }, [listingPhase, listingPageIndex, buildEntries]);
 
-  const currentChannel = previewChannels[previewIndex] || previewChannels[0] || null;
-  const currentProg = currentChannel?.programmes?.[0] || { title: "Schedule unavailable" };
-  const previewVideoUrl = APP_CONFIG.previewVideoUrl || currentChannel?.streamUrl || "";
+  const infoChannel = APP_CONFIG.previewInfoMode === "rotate"
+    ? previewChannels[previewIndex] || previewChannels[0] || null
+    : fixedPreviewChannel;
+  const videoChannel = APP_CONFIG.previewVideoMode === "channel"
+    ? (APP_CONFIG.previewInfoMode === "rotate"
+        ? previewChannels[previewIndex] || previewChannels[0] || null
+        : fixedPreviewChannel)
+    : null;
+  const currentProg = infoChannel?.programmes?.[0] || { title: "Schedule unavailable" };
+  const previewVideoUrl = APP_CONFIG.previewVideoMode === "url"
+    ? APP_CONFIG.previewVideoUrl || ""
+    : videoChannel?.streamUrl || "";
   return (
     <div style={{
       width: "720px",
@@ -1051,6 +1064,7 @@ export default function RetroCableGuide() {
       display: "grid",
       gridTemplateColumns: `${START_COL_WIDTH}px ${LEFT_CHANNEL_WIDTH}px ${NOW_HEADER_WIDTH}px ${TELE_TEXT_WIDTH}px`,
       gridTemplateRows: `${TOP_TEXT_HEIGHT}px ${CALENDAR_ROW_HEIGHT}px ${HEADER_HEIGHT}px ${BODY_HEIGHT}px`,
+      textShadow: TEXT_OUTLINE,
     }}>
       <div style={{
         gridColumn: "1 / 3",
@@ -1059,7 +1073,7 @@ export default function RetroCableGuide() {
         borderRight: "3px solid #ffffff",
         borderBottom: "2px solid #0f1a63",
       }}>
-        <NowOnPanel channel={currentChannel} programme={currentProg.title} />
+        <NowOnPanel channel={infoChannel} programme={currentProg.title} />
       </div>
 
       <div style={{
@@ -1071,7 +1085,7 @@ export default function RetroCableGuide() {
         borderBottom: "3px solid #ffffff",
       }}>
         <LiveWindow
-          channel={currentChannel}
+          channel={videoChannel || infoChannel}
           programme={currentProg.title}
           videoUrl={previewVideoUrl}
         />

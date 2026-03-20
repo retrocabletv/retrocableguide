@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { APP_CONFIG } from "./src/config.js";
-import { DEMO_CHANNELS } from "./src/guide/demoData.js";
 import { loadGuideData } from "./src/guide/client.js";
 
 const F_MAIN = "Arial, Helvetica, sans-serif";
@@ -54,7 +53,7 @@ const PROMOS = [
   },
 ];
 
-const DAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+const DAYS = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
 
 function pad(n) { return String(n).padStart(2, "0"); }
 
@@ -84,7 +83,7 @@ function countWrappedLines(label, title, maxWidth) {
     return 1;
   }
 
-  ctx.font = "italic 700 31px Arial";
+  ctx.font = "italic 700 26px Arial";
   const tokens = [label, ...title.split(/\s+/).filter(Boolean)];
   let lines = 1;
   let current = "";
@@ -125,93 +124,155 @@ function getVisibleEntries(entries, maxRows) {
   return visible;
 }
 
+function splitEntriesIntoPages(entries, maxRows) {
+  const pages = [];
+  let offset = 0;
+
+  while (offset < entries.length) {
+    const page = getVisibleEntries(entries.slice(offset), maxRows);
+    if (!page.length) {
+      break;
+    }
+    pages.push(page);
+    offset += page.length;
+  }
+
+  return pages.length ? pages : [[]];
+}
+
+function ChannelLogo({ logoUrl, alt, size = 28 }) {
+  if (!logoUrl) {
+    return null;
+  }
+
+  return (
+    <img
+      src={logoUrl}
+      alt={alt}
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        objectFit: "contain",
+        flexShrink: 0,
+      }}
+    />
+  );
+}
+
 function CalendarBadge({ date }) {
   const day = DAYS[date.getDay()];
   const dateNum = date.getDate();
-  const h = pad(date.getHours());
+  const h = APP_CONFIG.timeFormat === "12h"
+    ? String(date.getHours() % 12 || 12)
+    : String(date.getHours());
   const m = pad(date.getMinutes());
 
   return (
     <div style={{
-      background: "linear-gradient(180deg, #f4cf7a 0%, #e0ad48 45%, #d1962f 100%)",
-      borderRadius: "10px 10px 8px 8px",
+      background: "linear-gradient(180deg, #d4a030 0%, #c88e2a 42%, #b07820 100%)",
+      borderRadius: "14px 14px 12px 12px",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "flex-start",
-      width: "100%",
-      height: `${CALENDAR_ROW_HEIGHT - 10}px`,
+      width: "82%",
+      height: `${CALENDAR_ROW_HEIGHT - 12}px`,
       position: "relative",
-      boxShadow: "2px 2px 0px #000",
+      boxShadow: "2px 3px 0px rgba(0,0,0,0.88), inset 0 0 0 1px rgba(255,248,221,0.4)",
       border: "2px solid #221200",
       overflow: "visible",
+      marginLeft: "auto",
+      marginRight: "0",
     }}>
       <div style={{
         position: "absolute",
-        top: "-4px",
-        left: "20px",
+        inset: "2px",
+        borderRadius: "11px 11px 9px 9px",
+        background: "linear-gradient(180deg, rgba(255,245,214,0.72) 0%, rgba(255,255,255,0.08) 20%, transparent 42%, rgba(88,38,6,0.08) 100%)",
+        pointerEvents: "none",
+      }} />
+      <div style={{
+        position: "absolute",
+        top: "-7px",
+        left: "16px",
+        width: "11px",
+        height: "18px",
+        background: "linear-gradient(180deg, #fff8e6 0%, #f3dca7 40%, #d39a42 100%)",
+        borderRadius: "7px",
+        border: "1px solid #6f4514",
+        boxShadow: "1px 1px 0 rgba(0,0,0,0.7)",
+      }} />
+      <div style={{
+        position: "absolute",
+        top: "-7px",
+        right: "16px",
+        width: "11px",
+        height: "18px",
+        background: "linear-gradient(180deg, #fff8e6 0%, #f3dca7 40%, #d39a42 100%)",
+        borderRadius: "7px",
+        border: "1px solid #6f4514",
+        boxShadow: "1px 1px 0 rgba(0,0,0,0.7)",
+      }} />
+      <div style={{
+        position: "absolute",
+        top: "0px",
+        left: "18px",
         width: "8px",
-        height: "12px",
-        background: "linear-gradient(180deg, #f2f2f2 0%, #cfcfcf 100%)",
-        borderRadius: "4px",
-        border: "1px solid #3a3a3a",
-        boxShadow: "1px 1px 0 #000",
+        height: "8px",
+        background: "#4f2902",
+        borderRadius: "50%",
+        boxShadow: "inset 0 1px 0 rgba(255,224,169,0.35)",
       }} />
       <div style={{
         position: "absolute",
-        top: "-4px",
-        right: "20px",
+        top: "0px",
+        right: "18px",
         width: "8px",
-        height: "12px",
-        background: "linear-gradient(180deg, #f2f2f2 0%, #cfcfcf 100%)",
-        borderRadius: "4px",
-        border: "1px solid #3a3a3a",
-        boxShadow: "1px 1px 0 #000",
+        height: "8px",
+        background: "#4f2902",
+        borderRadius: "50%",
+        boxShadow: "inset 0 1px 0 rgba(255,224,169,0.35)",
       }} />
       <div style={{
         position: "absolute",
-        top: "-1px",
-        left: "21px",
-        width: "6px",
-        height: "6px",
-        background: "#3a2204",
-        borderRadius: "50%",
-      }} />
-      <div style={{
-        position: "absolute",
-        top: "-1px",
-        right: "21px",
-        width: "6px",
-        height: "6px",
-        background: "#3a2204",
-        borderRadius: "50%",
-      }} />
-      <div style={{
-        color: "#4b2c00",
-        fontFamily: F_UI,
+        top: "18px",
+        left: 0,
+        right: 0,
+        color: "#2d1800",
+        fontFamily: "'Bodoni 72', 'Didot', 'Times New Roman', serif",
         fontWeight: 900,
         fontSize: "10px",
-        letterSpacing: "0.5px",
-        padding: "5px 6px 0 6px",
-        width: "100%",
+        letterSpacing: "0px",
         textAlign: "center",
+        lineHeight: 1,
+        textTransform: "uppercase",
       }}>{day}</div>
       <div style={{
-        fontFamily: F_UI,
+        position: "absolute",
+        top: "30px",
+        left: 0,
+        right: 0,
+        fontFamily: "'Bodoni 72', 'Didot', 'Times New Roman', serif",
         fontWeight: 900,
-        fontSize: "40px",
-        color: "#160d02",
-        lineHeight: 0.9,
-        marginTop: "1px",
-        textShadow: "1px 1px 0 #6d4812",
+        fontSize: "48px",
+        color: "#150c02",
+        lineHeight: 0.78,
+        letterSpacing: "-1.4px",
+        textShadow: "1px 1px 0 rgba(109,72,18,0.28)",
+        textAlign: "center",
       }}>{dateNum}</div>
       <div style={{
+        position: "absolute",
+        bottom: "7px",
+        left: 0,
+        right: 0,
         fontFamily: F_UI,
-        fontWeight: 900,
-        fontSize: "16px",
-        color: "#160d02",
+        fontWeight: 700,
+        fontSize: "24px",
+        color: "#221100",
         lineHeight: 1,
-        marginTop: "1px",
+        letterSpacing: "-0.7px",
+        textAlign: "center",
       }}>{h}:{m}</div>
     </div>
   );
@@ -222,10 +283,9 @@ function GuideLogo() {
     <div style={{
       background: "#edf1f8",
       display: "flex",
-      flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      padding: "4px 12px",
+      padding: "0",
       boxShadow: "2px 2px 0px #000",
       border: "1px solid #1f285f",
       position: "relative",
@@ -233,102 +293,64 @@ function GuideLogo() {
       width: "100%",
       height: `${CALENDAR_ROW_HEIGHT - 10}px`,
     }}>
-      <div style={{
-        position: "absolute",
-        inset: 0,
-        background: "repeating-linear-gradient(-25deg, rgba(44,68,150,0.14) 0 9px, transparent 9px 22px)",
-        opacity: 0.85,
-      }} />
-      <div style={{
-        position: "absolute",
-        left: "18%",
-        bottom: "10%",
-        fontFamily: "'Brush Script MT', 'Segoe Script', cursive",
-        fontSize: "20px",
-        fontWeight: 700,
-        color: "#171717",
-        transform: "rotate(-10deg)",
-        opacity: 0.95,
-      }}>channel</div>
-      <div style={{
-        position: "absolute",
-        left: "29%",
-        bottom: "-1%",
-        fontFamily: "'Brush Script MT', 'Segoe Script', cursive",
-        fontSize: "30px",
-        fontWeight: 700,
-        color: "#101010",
-        transform: "rotate(-9deg)",
-        opacity: 0.98,
-      }}>Guide</div>
-      <div style={{
-        fontFamily: F_UI,
-        fontWeight: 900,
-        fontSize: "21px",
-        color: "#26359a",
-        letterSpacing: "0.5px",
-        lineHeight: 1,
-        position: "relative",
-      }}>ALE<span style={{ color: "#cc2222" }}>X</span></div>
-      <div style={{
-        fontFamily: F_UI,
-        fontStyle: "italic",
-        fontWeight: 700,
-        fontSize: "16px",
-        color: "#24339b",
-        lineHeight: 1,
-        position: "relative",
-        opacity: 0,
-      }}>Channel</div>
-      <div style={{
-        fontFamily: F_UI,
-        fontStyle: "italic",
-        fontWeight: 700,
-        fontSize: "17px",
-        color: "#24339b",
-        lineHeight: 1,
-        position: "relative",
-        opacity: 0,
-      }}>Guide</div>
+      <img
+        src={APP_CONFIG.guideLogoUrl}
+        alt="Alex Channel Guide"
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          display: "block",
+        }}
+      />
     </div>
   );
 }
 
 // --- NOW ON PANEL ---
 function NowOnPanel({ channel, programme }) {
+  const channelNumber = channel ? `Ch. ${channel.num}` : "Ch. --";
+  const logoUrl = channel?.logoUrl || "";
+  const channelName = channel?.name || "No preview";
+
   return (
-    <div style={{ padding: "14px 16px 6px 16px", height: "100%" }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginBottom: "2px" }}>
+    <div style={{ padding: "12px 16px 6px 16px", height: "100%" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "10px" }}>
         <div style={{
           fontFamily: F_UI,
           fontWeight: 900,
           color: "#ffffff",
           lineHeight: 0.95,
-          width: "96px",
+          width: "104px",
           flexShrink: 0,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "flex-start",
+          gap: "4px",
+          marginTop: "8px",
+          textAlign: "left",
         }}>
-          <div style={{ fontSize: "20px" }}>Now on</div>
-          <div style={{ fontSize: "28px" }}>Ch. {channel.num}</div>
+          <div style={{ fontSize: "20px", fontStyle: "normal" }}>Now on</div>
+          <div style={{ fontSize: "28px", fontStyle: "normal", whiteSpace: "nowrap" }}>{channelNumber}</div>
         </div>
         <div style={{
-          fontFamily: F_UI,
-          fontWeight: 900,
-          fontSize: "32px",
-          color: "#ff4444",
-          lineHeight: 1,
-          letterSpacing: "0px",
-          textShadow: "2px 2px 0px #000000",
-          flex: 1,
-          ...ONE_LINE,
-        }}>{channel.name}</div>
+          width: "104px",
+          height: "70px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}>
+          <ChannelLogo logoUrl={logoUrl} alt={channelName} size={64} />
+        </div>
       </div>
       <div style={{
         fontFamily: F_UI,
         fontWeight: 700,
         fontStyle: "normal",
-        fontSize: "20px",
+        fontSize: "24px",
         color: "#ffffff",
-        marginTop: "12px",
+        marginTop: "8px",
         textAlign: "center",
         lineHeight: 1.05,
       }}>{programme}</div>
@@ -337,8 +359,8 @@ function NowOnPanel({ channel, programme }) {
 }
 
 // --- LIVE WINDOW ---
-function LiveWindow({ channel, programme, videoUrl }) {
-  const hue = (channel.num * 27) % 360;
+function LiveWindow({ channel, programme, videoUrl, onPlaybackError }) {
+  const hue = ((channel?.num || 0) * 27) % 360;
   const previewWidth = 768;
   const previewHeight = FRAME_HEIGHT;
   const safeInsetX = 20;
@@ -349,6 +371,187 @@ function LiveWindow({ channel, programme, videoUrl }) {
   const scaledWidth = previewWidth * scale;
   const offsetX = (RIGHT_PANEL_WIDTH - scaledWidth) / 2;
   const [videoFailed, setVideoFailed] = useState(false);
+  const [cropToFourThree, setCropToFourThree] = useState(false);
+  const videoRef = useRef(null);
+  const errorReportedRef = useRef(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    const logPrefix = `[preview ${channel?.num ?? "--"}]`;
+    const logPlaybackError = (...args) => {
+      console.error(logPrefix, ...args);
+    };
+
+    errorReportedRef.current = false;
+    if (!video || !videoUrl) {
+      console.error(logPrefix, "Preview setup aborted", {
+        hasVideoElement: Boolean(video),
+        videoUrl,
+      });
+      setVideoFailed(true);
+      if (onPlaybackError) {
+        onPlaybackError();
+      }
+      return undefined;
+    }
+
+    const isHlsSource = /\.m3u8(?:$|\?)/i.test(videoUrl);
+    const isTsSource = /\.ts(?:$|\?)/i.test(videoUrl) || /\/proxy\/ts\//i.test(videoUrl);
+    const isNativeHlsSource = isHlsSource && video.canPlayType("application/vnd.apple.mpegurl");
+    const useNativeErrorEvents = !isTsSource && (!isHlsSource || isNativeHlsSource);
+    let hls = null;
+    let mpegtsPlayer = null;
+    let cancelled = false;
+    let retryCount = 0;
+    const attemptPlayback = async () => {
+      try {
+        await video.play();
+      } catch (error) {
+        if (error?.name === "NotAllowedError" && !video.muted) {
+          console.warn(logPrefix, "Autoplay with sound was blocked; retrying muted playback");
+          video.muted = true;
+          await video.play();
+          return;
+        }
+
+        logPlaybackError("Playback start failed", error);
+        throw error;
+      }
+    };
+    const reportPlaybackError = () => {
+      setVideoFailed(true);
+      if (!errorReportedRef.current && onPlaybackError) {
+        errorReportedRef.current = true;
+        onPlaybackError();
+      }
+    };
+    const handleLoadedMetadata = () => {
+      const sourceAspect = video.videoWidth && video.videoHeight
+        ? video.videoWidth / video.videoHeight
+        : 0;
+      setCropToFourThree(sourceAspect > (4 / 3) + 0.02);
+    };
+    const handleNativeError = () => {
+      const mediaError = video.error
+        ? {
+            code: video.error.code,
+            message: video.error.message,
+          }
+        : null;
+      logPlaybackError("Native media element error", mediaError);
+      reportPlaybackError();
+    };
+
+    setVideoFailed(false);
+    setCropToFourThree(false);
+    video.addEventListener("loadedmetadata", handleLoadedMetadata);
+    if (useNativeErrorEvents) {
+      video.addEventListener("error", handleNativeError);
+    }
+
+    async function attachPlayer() {
+      if (isHlsSource) {
+        if (isNativeHlsSource) {
+          video.src = videoUrl;
+          attemptPlayback().catch(reportPlaybackError);
+          return;
+        }
+
+        const { default: Hls } = await import("hls.js");
+        if (cancelled) {
+          return;
+        }
+
+        if (!Hls.isSupported()) {
+          logPlaybackError("hls.js is not supported in this browser");
+          setVideoFailed(true);
+          return;
+        }
+
+        hls = new Hls();
+        hls.loadSource(videoUrl);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          attemptPlayback().catch(reportPlaybackError);
+        });
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+          logPlaybackError("hls.js error", data);
+          if (data.fatal) {
+            reportPlaybackError();
+          }
+        });
+        return;
+      }
+
+      if (isTsSource) {
+        const { default: mpegts } = await import("mpegts.js");
+        if (cancelled) {
+          return;
+        }
+
+        if (!mpegts.getFeatureList().mseLivePlayback) {
+          logPlaybackError("mpegts.js live MSE playback is not supported in this browser", mpegts.getFeatureList());
+          setVideoFailed(true);
+          return;
+        }
+
+        mpegtsPlayer = mpegts.createPlayer({
+          type: "mpegts",
+          isLive: true,
+          liveBufferLatencyChasing: true,
+          liveBufferLatencyMaxLatency: 3,
+          liveBufferLatencyMinRemain: 0.5,
+          lazyLoad: false,
+          url: videoUrl,
+        });
+        mpegtsPlayer.attachMediaElement(video);
+        mpegtsPlayer.on(mpegts.Events.ERROR, (errorType, errorDetail, errorInfo) => {
+          logPlaybackError("mpegts.js error", {
+            errorType,
+            errorDetail,
+            errorInfo,
+          });
+          if (retryCount < 1 && !cancelled) {
+            retryCount += 1;
+            mpegtsPlayer.unload();
+            mpegtsPlayer.load();
+            attemptPlayback().catch(reportPlaybackError);
+            return;
+          }
+          reportPlaybackError();
+        });
+        mpegtsPlayer.load();
+        attemptPlayback().catch(reportPlaybackError);
+        return;
+      }
+
+      video.src = videoUrl;
+      attemptPlayback().catch(reportPlaybackError);
+    }
+
+    attachPlayer().catch(() => {
+      logPlaybackError("attachPlayer threw unexpectedly");
+      reportPlaybackError();
+    });
+
+    return () => {
+      cancelled = true;
+      if (hls) {
+        hls.destroy();
+      }
+      if (mpegtsPlayer) {
+        mpegtsPlayer.destroy();
+      }
+      if (video) {
+        video.removeEventListener("loadedmetadata", handleLoadedMetadata);
+        if (useNativeErrorEvents) {
+          video.removeEventListener("error", handleNativeError);
+        }
+        video.pause();
+        video.removeAttribute("src");
+      }
+    };
+  }, [videoUrl, onPlaybackError]);
 
   return (
     <div style={{
@@ -377,25 +580,24 @@ function LiveWindow({ channel, programme, videoUrl }) {
           overflow: "hidden",
           background: `linear-gradient(180deg, hsl(${hue} 40% 24%), hsl(${(hue + 35) % 360} 34% 14%))`,
         }}>
-          {!videoFailed ? (
-            <video
-              src={videoUrl}
-              autoPlay
-              muted
-              loop
-              playsInline
-              onError={() => setVideoFailed(true)}
-              style={{
-                position: "absolute",
-                inset: 0,
-                width: "100%",
-                height: "100%",
-                objectFit: "contain",
-                objectPosition: "center",
-                background: "#000000",
-              }}
-            />
-          ) : (
+          <video
+            ref={videoRef}
+            autoPlay
+            muted={APP_CONFIG.previewMuted}
+            loop
+            playsInline
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: cropToFourThree ? "cover" : "contain",
+              objectPosition: "center",
+              background: "#000000",
+              opacity: videoFailed || !videoUrl ? 0 : 1,
+            }}
+          />
+          {videoFailed || !videoUrl ? (
             <>
             <div style={{
               position: "absolute",
@@ -443,7 +645,7 @@ function LiveWindow({ channel, programme, videoUrl }) {
               opacity: 0.24,
             }} />
             </>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
@@ -454,7 +656,7 @@ function LiveWindow({ channel, programme, videoUrl }) {
 function ChannelListing({ entries, phase, buildProgress }) {
   const visible = getVisibleEntries(entries, 6);
   return (
-    <div style={{ overflow: "hidden", height: "100%", background: "#000066" }}>
+    <div style={{ overflow: "hidden", height: "100%", background: "#0a0a44" }}>
       <div style={{ padding: "6px 0 1px 0", height: "100%" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
           <colgroup>
@@ -470,6 +672,7 @@ function ChannelListing({ entries, phase, buildProgress }) {
                 <tr key={`${phase}-${entry.num}-${i}`} style={{
                   opacity: isVisible ? 1 : 0,
                   transition: `opacity 0.1s ease ${i * 0.05}s`,
+                  background: i % 2 === 0 ? "#0c0c4a" : "#14146a",
                 }}>
                   <td style={{
                     width: `${START_COL_WIDTH}px`,
@@ -496,8 +699,8 @@ function ChannelListing({ entries, phase, buildProgress }) {
                     color: "#ffffff",
                     textAlign: "left",
                   }}>
-                    <span style={{ color: "#ffff00", whiteSpace: "nowrap" }}>{label} </span>
-                    <span>{entry.title}</span>
+                    <span style={{ color: "#ffff00", whiteSpace: "nowrap" }}>{label}</span>
+                    <span> {entry.title}</span>
                   </td>
                 </tr>
               );
@@ -512,11 +715,12 @@ function ChannelListing({ entries, phase, buildProgress }) {
 // --- MAIN ---
 export default function RetroCableGuide() {
   const [now, setNow] = useState(new Date());
-  const [nowOnIndex, setNowOnIndex] = useState(0);
+  const [previewIndex, setPreviewIndex] = useState(0);
   const [listingPhase, setListingPhase] = useState("now");
   const [buildProgress, setBuildProgress] = useState(0);
   const [listingEntries, setListingEntries] = useState([]);
-  const [channels, setChannels] = useState(DEMO_CHANNELS);
+  const [listingPageIndex, setListingPageIndex] = useState(0);
+  const [channels, setChannels] = useState([]);
 
   // Clock
   useEffect(() => {
@@ -535,7 +739,7 @@ export default function RetroCableGuide() {
       }
 
       setChannels(payload.channels);
-      setNowOnIndex((prev) => Math.min(prev, payload.channels.length - 1));
+      setPreviewIndex((prev) => Math.min(prev, payload.channels.length - 1));
     }
 
     refreshGuide();
@@ -554,43 +758,53 @@ export default function RetroCableGuide() {
     };
   }, []);
 
+  const previewChannels = APP_CONFIG.previewChannels?.length
+    ? channels.filter((channel) => APP_CONFIG.previewChannels.includes(channel.num) && channel.streamUrl)
+    : channels.filter((channel) => channel.streamUrl);
+  const previewChannelKey = previewChannels.map((channel) => channel.num).join(",");
+
   // Now On rotation
   useEffect(() => {
-    if (channels.length <= 1) {
+    if (previewChannels.length <= 1) {
       return undefined;
     }
 
     const t = setInterval(() => {
-      setNowOnIndex(prev => (prev + 1) % channels.length);
-    }, 5000);
+      setPreviewIndex(prev => (prev + 1) % previewChannels.length);
+    }, (APP_CONFIG.previewCycleSeconds || 30) * 1000);
     return () => clearInterval(t);
-  }, [channels]);
+  }, [previewChannelKey]);
 
   // Build listing entries
   const buildEntries = useCallback((phase) => {
     return channels.map(ch => {
       const progIndex = phase === "now" ? 0 : Math.min(1, ch.programmes.length - 1);
       const prog = ch.programmes[progIndex];
-      return { num: ch.num, channelName: ch.name, start: prog.start, title: prog.title };
+      return { num: ch.num, channelName: ch.name, logoUrl: ch.logoUrl, start: prog.start, title: prog.title };
     });
   }, [channels]);
 
   // Listing cycle
   useEffect(() => {
     const entries = buildEntries(listingPhase);
-    setListingEntries(entries);
+    const pages = splitEntriesIntoPages(entries, 6);
+    const pageIndex = listingPageIndex % pages.length;
+    const pageEntries = pages[pageIndex];
+
+    setListingEntries(pageEntries);
     setBuildProgress(0);
 
     let line = 0;
     const buildInterval = setInterval(() => {
       line++;
       setBuildProgress(line);
-      if (line >= entries.length) clearInterval(buildInterval);
+      if (line >= pageEntries.length) clearInterval(buildInterval);
     }, 100);
 
     const holdTimeout = setTimeout(() => {
       setBuildProgress(0);
       setTimeout(() => {
+        setListingPageIndex((prev) => (prev + 1) % pages.length);
         setListingPhase(prev => prev === "now" ? "next" : "now");
       }, 500);
     }, 10000);
@@ -599,12 +813,11 @@ export default function RetroCableGuide() {
       clearInterval(buildInterval);
       clearTimeout(holdTimeout);
     };
-  }, [listingPhase, buildEntries]);
+  }, [listingPhase, listingPageIndex, buildEntries]);
 
-  const currentChannel = channels[nowOnIndex] || DEMO_CHANNELS[0];
-  const currentProg = currentChannel.programmes[0] || { title: "Schedule unavailable" };
-  const previewVideoUrl = APP_CONFIG.previewVideoUrl || "/video.mp4";
-
+  const currentChannel = previewChannels[previewIndex] || previewChannels[0] || null;
+  const currentProg = currentChannel?.programmes?.[0] || { title: "Schedule unavailable" };
+  const previewVideoUrl = APP_CONFIG.previewVideoUrl || currentChannel?.streamUrl || "";
   return (
     <div style={{
       width: "720px",
@@ -635,7 +848,11 @@ export default function RetroCableGuide() {
         background: "#1a0000",
         borderBottom: "3px solid #ffffff",
       }}>
-        <LiveWindow channel={currentChannel} programme={currentProg.title} videoUrl={previewVideoUrl} />
+        <LiveWindow
+          channel={currentChannel}
+          programme={currentProg.title}
+          videoUrl={previewVideoUrl}
+        />
       </div>
 
       <div style={{

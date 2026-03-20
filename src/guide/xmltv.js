@@ -8,7 +8,9 @@ function decodeXmlEntities(text) {
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
+    .replace(/&#39;/g, "'")
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#([0-9]+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)));
 }
 
 function parseAttributes(input) {
@@ -76,12 +78,21 @@ function parseXmltvDate(value) {
   return new Date(utcMillis - offsetMillis);
 }
 
-function formatProgrammeTime(date) {
+function formatTimeValue(date, timeFormat) {
+  if (timeFormat === "12h") {
+    const hour12 = date.getHours() % 12 || 12;
+    return `${hour12}:${String(date.getMinutes()).padStart(2, "0")}`;
+  }
+
+  return `${date.getHours()}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+function formatProgrammeTime(date, timeFormat) {
   if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
     return "--:--";
   }
 
-  return `${date.getHours()}:${String(date.getMinutes()).padStart(2, "0")}`;
+  return formatTimeValue(date, timeFormat);
 }
 
 function parseProgrammeBlocks(xml) {
@@ -122,9 +133,12 @@ function parseChannelBlocks(xml) {
       displayNameMatch = displayNameRegex.exec(body);
     }
 
+    const iconMatch = body.match(/<icon\b[^>]*src="([^"]+)"[^>]*\/?>/i);
+
     channels.push({
       id: attributes.id || "",
       displayNames,
+      iconUrl: iconMatch ? decodeXmlEntities(iconMatch[1]) : "",
     });
 
     match = channelRegex.exec(xml);
@@ -133,7 +147,11 @@ function parseChannelBlocks(xml) {
   return channels;
 }
 
-function parseM3uPlaylist(text) {
+function stripChannelPrefix(name) {
+  return name.replace(/^[A-Z]{2}\s*(?:\||-)\s*/i, "").trim();
+}
+
+function parseM3uPlaylist(text, config) {
   const lines = text
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -151,11 +169,20 @@ function parseM3uPlaylist(text) {
     const streamUrl = lines[index + 1] && !lines[index + 1].startsWith("#")
       ? lines[index + 1]
       : "";
+    const rawName = attributes["tvg-name"] || namePart.trim() || "Unknown Channel";
+    const groupTitle = attributes["group-title"] || "";
+
+    if (config.allowedGroups?.length && !config.allowedGroups.includes(groupTitle)) {
+      continue;
+    }
 
     entries.push({
       num: Number(attributes["channel-number"] || attributes["tvg-chno"] || 0),
-      name: attributes["tvg-name"] || namePart.trim() || "Unknown Channel",
+      name: config.stripNamePrefixes ? stripChannelPrefix(rawName) : rawName,
+      rawName,
+      groupTitle,
       xmltvId: attributes["tvg-id"] || "",
+      logoUrl: attributes["tvg-logo"] || "",
       streamUrl,
     });
   }
@@ -181,12 +208,19 @@ function pickNowAndNext(programmes, now) {
   });
 
   if (currentIndex >= 0) {
-    return programmes.slice(currentIndex, currentIndex + 2);
+    const currentProgramme = programmes[currentIndex];
+    const nextProgramme = programmes
+      .slice(currentIndex + 1)
+      .find((programme) => programme.start && currentProgramme.stop
+        ? programme.start >= currentProgramme.stop
+        : programme.start && currentProgramme.start && programme.start > currentProgramme.start);
+
+    return [currentProgramme, nextProgramme].filter(Boolean);
   }
 
   const upcomingIndex = programmes.findIndex((programme) => programme.start && programme.start > now);
   if (upcomingIndex >= 0) {
-    return programmes.slice(upcomingIndex, upcomingIndex + 2);
+    return [programmes[upcomingIndex], programmes[upcomingIndex + 1]].filter(Boolean);
   }
 
   const lastProgramme = programmes[programmes.length - 1];
@@ -209,6 +243,7 @@ function buildProgrammeGroups(programmes, xmltvChannels) {
         displayNames: new Set(),
         normalisedDisplayNames: new Set(),
         channelNumbers: new Set(),
+        iconUrl: "",
         programmes: [],
       });
     }
@@ -224,6 +259,7 @@ function buildProgrammeGroups(programmes, xmltvChannels) {
   for (const channel of xmltvChannels) {
     const directGroup = groups.get(channel.id);
     if (directGroup) {
+      directGroup.iconUrl = directGroup.iconUrl || channel.iconUrl;
       for (const displayName of channel.displayNames) {
         directGroup.displayNames.add(displayName);
         directGroup.normalisedDisplayNames.add(normaliseName(displayName));
@@ -251,6 +287,7 @@ function buildProgrammeGroups(programmes, xmltvChannels) {
         group.displayNames.add(displayName);
         group.normalisedDisplayNames.add(normaliseName(displayName));
       }
+      group.iconUrl = group.iconUrl || channel.iconUrl;
     }
 
     group.programmes.sort((a, b) => a.start - b.start);
@@ -278,7 +315,7 @@ function scoreGroupForChannel(group, channel) {
   return score;
 }
 
-export function normalizeGuideData(programmes, xmltvChannels, playlistEntries, now = new Date()) {
+export function normalizeGuideData(programmes, xmltvChannels, playlistEntries, timeFormat, now = new Date()) {
   const groups = buildProgrammeGroups(programmes, xmltvChannels);
 
   return playlistEntries.map((channel) => {
@@ -290,7 +327,7 @@ export function normalizeGuideData(programmes, xmltvChannels, playlistEntries, n
 
     const selected = pickNowAndNext(channelProgrammes, now);
     const normalizedProgrammes = selected.map((programme) => ({
-      start: formatProgrammeTime(programme.start),
+      start: formatProgrammeTime(programme.start, timeFormat),
       title: programme.subTitle ? `${programme.title}: ${programme.subTitle}` : programme.title,
     }));
 
@@ -299,12 +336,13 @@ export function normalizeGuideData(programmes, xmltvChannels, playlistEntries, n
     }
 
     if (normalizedProgrammes.length === 1) {
-      normalizedProgrammes.push({ ...normalizedProgrammes[0] });
+      normalizedProgrammes.push({ start: "--:--", title: "Next unavailable" });
     }
 
     return {
       num: channel.num,
       name: channel.name,
+      logoUrl: channel.logoUrl || bestGroup?.group.iconUrl || "",
       streamUrl: channel.streamUrl,
       programmes: normalizedProgrammes,
     };
@@ -330,14 +368,17 @@ export async function buildGuidePayload(config, now = new Date()) {
   }
 
   const [m3uText, xml] = await Promise.all([m3uResponse.text(), xmltvResponse.text()]);
-  const playlistEntries = parseM3uPlaylist(m3uText);
+  const playlistEntries = parseM3uPlaylist(m3uText, config);
+  const limitedEntries = config.channelLimit
+    ? playlistEntries.slice(0, config.channelLimit)
+    : playlistEntries;
   const xmltvChannels = parseChannelBlocks(xml);
   const programmes = parseProgrammeBlocks(xml);
 
   return {
     source: "xmltv+m3u",
     generatedAt: now.toISOString(),
-    channels: normalizeGuideData(programmes, xmltvChannels, playlistEntries, now),
+    channels: normalizeGuideData(programmes, xmltvChannels, limitedEntries, config.timeFormat, now),
   };
 }
 

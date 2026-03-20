@@ -10,6 +10,15 @@ export async function loadGuideData() {
 
     return await response.json();
   } catch (error) {
+    if (!APP_CONFIG.fallbackToDemoData) {
+      return {
+        source: "error",
+        generatedAt: new Date().toISOString(),
+        channels: [],
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+
     return {
       ...buildDemoGuidePayload(),
       error: error instanceof Error ? error.message : String(error),

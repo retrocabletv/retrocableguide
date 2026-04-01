@@ -56,11 +56,13 @@ function buildIndexSubpage(channels, subpageIndex, totalSubpages, config) {
   rows.push(textRow(20, 'Press "1" then Chan.No for Today\'s', CC.WHITE));
   rows.push(textRow(21, '      "2" then Chan.No for Tomorrow\'s', CC.WHITE));
 
-  // Row 22: "More Channels follow" on every page
-  rows.push({
-    index: 22,
-    content: cc(CC.GREEN) + "More Channels follow " + cc(CC.FLASH) + ">>>>",
-  });
+  // Row 22: "More Channels follow" only when there are further subpages
+  if (subpageIndex < totalSubpages - 1) {
+    rows.push({
+      index: 22,
+      content: cc(CC.GREEN) + "More Channels follow " + cc(CC.FLASH) + ">>>>",
+    });
+  }
 
   return rows;
 }

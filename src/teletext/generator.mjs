@@ -167,12 +167,14 @@ function buildSlotMap(channelData, config) {
     }
     return map;
   }
-  channelData.forEach((ch, i) => {
-    const displayNum = i + 1;
-    if (displayNum <= 99) {
+  // Use the channel's actual M3U number as the display number so that
+  // channel 39 maps to page 139, not a sequential slot.
+  for (const ch of channelData) {
+    const displayNum = ch.num;
+    if (displayNum !== null && displayNum >= 1 && displayNum <= 99) {
       map.set(ch.num, { slot: toBCD(displayNum), displayNum });
     }
-  });
+  }
   return map;
 }
 

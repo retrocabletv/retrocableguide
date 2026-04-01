@@ -1,8 +1,8 @@
 export const TELETEXT_CONFIG = {
   // Feed URLs (duplicated from main config to avoid CJS/ESM issues)
-  m3uUrl: "http://192.168.20.186:9191/output/m3u",
-  xmltvUrl: "http://192.168.20.186:9191/output/epg",
-  allowedGroups: ["UK - Documentaries", "UK - Entertainment", "UK - Movies", "UK - Sports"],
+  m3uUrl: "http://192.168.20.186:9191/output/m3u/RetroCable",
+  xmltvUrl: "http://192.168.20.186:9191/output/epg/RetroCable",
+  allowedGroups: [],
   stripNamePrefixes: true,
   channelLimit: 0,
 

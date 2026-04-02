@@ -12,14 +12,16 @@ export const CC = {
   HOLD_MOSAIC: 0x1e, RELEASE_MOSAIC: 0x1f,
 };
 
-// Convert a teletext control code to its TTI hex escape notation
+// Convert a teletext control code to its high-byte representation.
+// Per the MRG TTI spec, control codes below 0x20 have bit 8 set (add 0x80)
+// so they are stored as actual bytes 0x80-0x9F in the file.
 export function cc(code) {
-  return `\\x${(code + 0x80).toString(16).padStart(2, "0")}`;
+  return String.fromCharCode(code + 0x80);
 }
 
-// Count display columns (each \xNN escape = 1 column, other chars = 1 column)
+// Count display columns — every character (including control code bytes) is one column
 export function displayWidth(text) {
-  return text.replace(/\\x[0-9a-f]{2}/gi, ".").length;
+  return text.length;
 }
 
 // Pad a string to exactly `width` display columns

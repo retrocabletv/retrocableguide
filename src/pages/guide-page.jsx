@@ -10,6 +10,7 @@ const IS_NYNEX = APP_CONFIG.guideStyle === "nynex";
 const SHOW_PROMOS = APP_CONFIG.previewContentMode === "promo";
 const FRAME_WIDTH = 720;
 const FRAME_HEIGHT = 576;
+const TITLE_SAFE_SCALE = 0.9; // 10% inset — PAL title-safe area
 const LEFT_PANEL_WIDTH = 287;
 const RIGHT_PANEL_WIDTH = FRAME_WIDTH - LEFT_PANEL_WIDTH;
 const TOP_TOTAL_HEIGHT = Math.round(RIGHT_PANEL_WIDTH * 3 / 4);
@@ -1201,6 +1202,12 @@ export default function RetroCableGuide() {
       background: "#0a0a2e",
       position: "relative",
       overflow: "hidden",
+    }}>
+    <div style={{
+      width: "720px",
+      height: "576px",
+      transform: `scale(${TITLE_SAFE_SCALE})`,
+      transformOrigin: "center center",
       display: "grid",
       gridTemplateColumns: `${START_COL_WIDTH}px ${LEFT_CHANNEL_WIDTH}px ${NOW_HEADER_WIDTH}px ${TELE_TEXT_WIDTH}px`,
       gridTemplateRows: `${TOP_TEXT_HEIGHT}px ${CALENDAR_ROW_HEIGHT}px ${HEADER_HEIGHT}px ${BODY_HEIGHT}px`,
@@ -1341,6 +1348,7 @@ export default function RetroCableGuide() {
       </div>
 
       <CrtOverlay />
+    </div>
     </div>
   );
 }

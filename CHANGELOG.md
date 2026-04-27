@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3](https://github.com/retrocabletv/retrocableguide/compare/v1.0.2...v1.0.3) (2026-04-27)
+
+
+### Bug Fixes
+
+* **deps-dev:** bump vite ([#7](https://github.com/retrocabletv/retrocableguide/issues/7)) ([99e202e](https://github.com/retrocabletv/retrocableguide/commit/99e202e794d91db0046ae00c6c78108f5331e8ce))
+
 ## [1.0.2](https://github.com/retrocabletv/retrocableguide/compare/v1.0.1...v1.0.2) (2026-04-27)
 
 

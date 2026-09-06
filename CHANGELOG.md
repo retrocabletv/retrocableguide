@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.4](https://github.com/retrocabletv/retrocableguide/compare/v1.0.3...v1.0.4) (2026-09-06)
+
+
+### Bug Fixes
+
+* **deps:** bump the npm-dependencies group with 3 updates ([#11](https://github.com/retrocabletv/retrocableguide/issues/11)) ([d12c827](https://github.com/retrocabletv/retrocableguide/commit/d12c827bc4257e6e51736c924c10379ea54af267))
+
 ## [1.0.3](https://github.com/retrocabletv/retrocableguide/compare/v1.0.2...v1.0.3) (2026-04-27)
 
 
